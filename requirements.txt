@@ -1,0 +1,9 @@
+langgraph==0.2.19
+langchain-core==0.3.15
+langchain==0.3.7
+requests==2.31.0
+beautifulsoup4==4.12.2
+html2text==2020.1.16
+lxml==4.9.3
+tqdm==4.66.1
+python-dotenv==1.0.0
