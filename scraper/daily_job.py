@@ -71,7 +71,7 @@ def run_daily_job() -> None:
         "updated": updated,
         "skipped": skipped,
         "total_articles": len(scraped),
-        "added_ids": [art["id"] for art in scraped if str(art["id"]) not in old_hash][:10],  # first 10
+        "added_ids": [art["id"] for art in scraped if str(art["id"]) not in old_hash],  # first 10
         "updated_ids": [art["id"] for art in scraped if str(art["id"]) in old_hash and old_hash[str(art["id"])] != new_hash[str(art["id"])]][:10]
     }
     
