@@ -59,7 +59,8 @@ def ask_endpoint(body: AskRequest) -> AskResponse:
 @app.get("/logs/last-run", summary="Get last scraper run log", tags=["logs"])
 def get_last_run_log():
     """Return the last scraper job run log with added/updated/skipped counts."""
-    log_path = "/var/log/optibot/last_run_log.json"
+    # Container path (mounted from /var/log/optibot on host)
+    log_path = "/app/logs/last_run_log.json"
     
     # For local development, try current directory
     if not os.path.exists(log_path):
