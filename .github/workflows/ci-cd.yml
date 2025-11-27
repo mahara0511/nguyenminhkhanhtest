@@ -97,7 +97,7 @@ jobs:
               -v /opt/optibot/chroma_storage:/app/chroma_storage \\
               -v /var/log/optibot:/app/logs \\
               ${REGISTRY}/${IMAGE}:latest \\
-              bash -c "python -m scraper.daily_job && cp last_run_log.json /app/logs/" >> /var/log/optibot/scraper.log 2>&1
+              bash -c "python -m main.py && cp last_run_log.json /app/logs/" >> /var/log/optibot/scraper.log 2>&1
             echo "=== Completed daily scraper job at \$(date) ===" >> /var/log/optibot/scraper.log
             CRONEOF
             sudo chmod +x /opt/optibot/run_scraper.sh

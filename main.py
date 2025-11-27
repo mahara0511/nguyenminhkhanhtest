@@ -3,8 +3,8 @@ import hashlib
 import os
 from datetime import datetime
 from scraper.graph import build_scraper_graph
-from uploader import upload_delta
-
+from loader.vector_store import add_to_vectorstore
+from loader.graph import build_loader_graph
 STATE_FILE = "state.json"
 SCRAPE_OUTPUT_FILE = "output.json"
 RUN_LOG = "last_run_log.json"
@@ -17,7 +17,7 @@ def load_state():
         return json.load(f)
 
 
-def save_state(sta0te):
+def save_state(state):
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
 
@@ -86,12 +86,16 @@ def write_run_log(added, updated, skipped):
 def main():
     print("Starting daily scraper job...")
 
-    graph = build_scraper_graph()
-    result = graph.invoke({
-        "page_url": "https://support.optisigns.com/api/v2/help_center/en-us/articles.json",
-        "results": [],
-        "next_page": None
-    })
+    scraper_graph = build_scraper_graph()
+    loader_graph = build_loader_graph()
+    result = scraper_graph.invoke(
+        {
+            "page_url": "https://support.optisigns.com/api/v2/help_center/en-us/articles.json",
+            "results": [],
+            "next_page": None
+        },
+        config={"recursion_limit": 100}
+    )
 
     articles = result["results"]
 
@@ -110,7 +114,19 @@ def main():
     # Upload only the delta
     delta = added + updated
     if delta:
-        upload_delta(delta)
+        print(f"Uploading {len(delta)} articles to vector store...")
+        for art in delta:
+            content = art["markdown"]
+            emb_res = loader_graph.invoke({
+                "article": art,
+                "chunks": [],
+                "embeddings": [],
+                "metadata_list": [],
+                "total_chunks": 0
+            })
+            total_chunks = emb_res["total_chunks"]
+
+            print(f"[UPLOADED] {art['id']}")
     else:
         print("No changes detected → Nothing to upload.")
 

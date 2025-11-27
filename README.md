@@ -39,7 +39,7 @@ docker run --rm \
   -e GEMINI_API_KEY="your_key" \
   -v $(pwd)/chroma_storage:/app/chroma_storage \
   -v $(pwd)/logs:/app/logs \
-  optibot python -m scraper.daily_job
+  optibot python main.py
 ```
 
 **4. Test API:**
