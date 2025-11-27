@@ -85,6 +85,7 @@ jobs:
               -e GEMINI_API_KEY="${GEMINI_KEY}" \
               -v /opt/optibot/chroma_storage:/app/chroma_storage \
               -v /var/log/optibot:/app/logs \
+              -v /opt/optibot/state.json:/app/state.json \
               --restart unless-stopped \
               ${REGISTRY}/${IMAGE}:latest
 
@@ -96,6 +97,7 @@ jobs:
               -e GEMINI_API_KEY="${GEMINI_KEY}" \\
               -v /opt/optibot/chroma_storage:/app/chroma_storage \\
               -v /var/log/optibot:/app/logs \\
+              -v /opt/optibot/state.json:/app/state.json \\
               ${REGISTRY}/${IMAGE}:latest \\
               bash -c "python -m main && cp last_run_log.json /app/logs/" >> /var/log/optibot/scraper.log 2>&1
             echo "=== Completed daily scraper job at \$(date) ===" >> /var/log/optibot/scraper.log
