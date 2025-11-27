@@ -76,11 +76,15 @@ jobs:
             sudo docker stop optibot-api || true
             sudo docker rm optibot-api || true
 
+            # Ensure log directory exists
+            sudo mkdir -p /var/log/optibot
+
             # Run new container
             sudo docker run -d --name optibot-api \
               -p 80:8000 \
               -e GEMINI_API_KEY="${GEMINI_KEY}" \
               -v /opt/optibot/chroma_storage:/app/chroma_storage \
+              -v /var/log/optibot:/app/logs \
               --restart unless-stopped \
               ${REGISTRY}/${IMAGE}:latest
 
