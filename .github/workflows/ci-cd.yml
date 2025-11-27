@@ -102,5 +102,9 @@ jobs:
             CRONEOF
             sudo chmod +x /opt/optibot/run_scraper.sh
 
+            # Setup cron job (runs at 2 AM daily) if not exists
+            (sudo crontab -l 2>/dev/null | grep -q "/opt/optibot/run_scraper.sh") || \
+            (sudo crontab -l 2>/dev/null; echo "0 2 * * * /opt/optibot/run_scraper.sh") | sudo crontab -
+
             # Show container status
             sudo docker ps | grep optibot-api
