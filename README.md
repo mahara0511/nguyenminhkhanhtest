@@ -2,10 +2,16 @@
 
 AI-powered assistant using RAG (Retrieval-Augmented Generation) with Gemini embeddings and ChromaDB. Features automated daily scraper with delta detection.
 
+## Production Deployment
+
+**Live API:** http://4.241.170.167  
+**Swagger:** http://4.241.170.167/docs  
+**Daily Job Logs:** http://4.241.170.167/logs/last-run
+
 ## Prerequisites
 
 - Docker
-- Gemini API Key ([Get here](https://ai.google.dev/))
+- Gemini API Key ([Instruction](https://ai.google.dev/gemini-api/docs/api-key))
 
 ## Setup
 
@@ -54,11 +60,51 @@ cat logs/last_run_log.json
 # Or: curl http://localhost:8000/logs/last-run
 ```
 
-## Production Deployment
+## Run Locally (No Docker)
 
-**Live API:** http://4.241.170.167  
-**Swagger:** http://4.241.170.167/docs  
-**Daily Job Logs:** http://4.241.170.167/logs/last-run
+**1. Tạo virtualenv và cài dependencies:**
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+**2. Đặt biến môi trường API key:**
+
+```bash
+export GEMINI_API_KEY="your_key"
+```
+
+**3. Chạy API server:**
+
+```bash
+uvicorn assistant.run:app --reload
+```
+
+**4. Chạy scraper thủ công:**
+
+```bash
+python main.py
+```
+
+**5. Xem log:**
+
+```bash
+cat last_run_log.json
+```
+
+**6. Test API:**
+
+- Swagger UI: http://localhost:8000/docs
+- Example: `curl -X POST http://localhost:8000/ask -H "Content-Type: application/json" -d '{"query": "How to setup digital signage?"}'`
+
+**7. Check logs:**
+
+```bash
+cat logs/last_run_log.json
+# Or: curl http://localhost:8000/logs/last-run
+```
 
 ## License
 
