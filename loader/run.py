@@ -1,24 +1,29 @@
-# run.py
+# loader/run.py
 from loader.graph import build_loader_graph
-import glob
 from dotenv import load_dotenv
+import json
+
 load_dotenv()
+
 def load_all():
-    files = glob.glob("articles/*.md")
+
+    # ---- Load articles from scraper/output.json ----
+    with open("scraper/output.json", "r") as f:
+        articles = json.load(f)
+
     graph = build_loader_graph()
 
     total = 0
-    for f in files:
+    for article in articles:
         res = graph.invoke({
-            "file_paths": files,
-            "current_file": f,
+            "article": article,
             "chunks": [],
             "embeddings": [],
             "metadata_list": [],
             "total_chunks": 0
         })
         total += res["total_chunks"]
-        print(f"Loaded: {f} → {res['total_chunks']} chunks")
+        print(f"Loaded: {article['slug']} → {res['total_chunks']} chunks")
 
     print(f"\n=== DONE: Embedded {total} chunks ===")
 

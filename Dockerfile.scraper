@@ -9,4 +9,4 @@ COPY . .
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python", "-m", "assistant.server"]
+CMD ["python", "-m", scraper.run_scraper]

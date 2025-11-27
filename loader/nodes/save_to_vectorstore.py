@@ -1,33 +1,21 @@
+# loader/nodes/save_to_vectorstore.py
 from loader.vector_store import add_to_vectorstore
-import os
 
 def save_to_vectorstore(state):
-    """
-    Save chunks + embeddings to vector store.
+    article_id = state["id"]
+    title = state["title"]
+    slug = state["slug"]
+    url = state["url"]
 
-    Required:
-    - state["current_file"]
-    - state["chunks"]
-    - state["embeddings"]
-    """
-    file_path = state["current_file"]
-    slug = os.path.splitext(os.path.basename(file_path))[0]   # NEW — create slug properly
-
-    chunks = state["chunks"]
-    embeddings = state["embeddings"]
-
-    print(f"[VectorStore] Saving {len(chunks)} chunks for {slug}")
-
-    for i, chunk in enumerate(chunks):
-        chunk_id = f"{slug}-{i}"
-
+    for idx, (chunk, emb) in enumerate(zip(state["chunks"], state["embeddings"])):
         metadata = {
-            "id": chunk_id,
+            "article_id": article_id,
+            "title": title,
             "slug": slug,
-            "file": file_path,
-            "chunk_index": i,
+            "url": url,              # 🔥 để assistant trả link
+            "id": f"{article_id}-{idx}",
         }
 
-        add_to_vectorstore(chunk, embeddings[i], metadata)
+        add_to_vectorstore(chunk, emb, metadata)
 
-    return {"saved": slug, "total_chunks": len(chunks)}
+    return {"total_chunks": len(state["chunks"])}

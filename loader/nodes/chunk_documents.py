@@ -2,5 +2,5 @@
 from loader.chunker import chunk_markdown
 
 def chunk_documents(state):
-    chunks = chunk_markdown(state["file_text"])
+    chunks = chunk_markdown(state["markdown"])
     return {"chunks": chunks}

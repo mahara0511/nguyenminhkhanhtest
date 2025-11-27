@@ -1,75 +1,126 @@
-import os
-import hashlib
 import json
+import hashlib
+import os
+from datetime import datetime
+from scraper.graph import build_scraper_graph
+from uploader import upload_delta
 
-# --- import pipeline ---
-from scraper.run import run_scraper       # scrape + save markdown
-from loader.run import load_all           # load markdown → chunk → embed → chroma
+STATE_FILE = "state.json"
+SCRAPE_OUTPUT_FILE = "output.json"
+RUN_LOG = "last_run_log.json"
 
 
-HASH_FILE = "article_hashes.json"
-
-
-def load_hashes():
-    if not os.path.exists(HASH_FILE):
+def load_state():
+    if not os.path.exists(STATE_FILE):
         return {}
-    with open(HASH_FILE, "r") as f:
+    with open(STATE_FILE, "r") as f:
         return json.load(f)
 
 
-def save_hashes(h):
-    with open(HASH_FILE, "w") as f:
-        json.dump(h, f, indent=2)
+def save_state(state):
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f, indent=2)
 
 
-def file_hash(path):
-    with open(path, "rb") as f:
-        return hashlib.md5(f.read()).hexdigest()
+def compute_hash(md_text):
+    return hashlib.sha256(md_text.encode("utf-8")).hexdigest()
 
 
-def detect_delta(articles_dir="articles"):
-    old = load_hashes()
-    new = {}
-    added, updated, skipped = [], [], []
+def detect_changes(articles, prev_state):
+    added = []
+    updated = []
+    skipped = []
 
-    for file in os.listdir(articles_dir):
-        if not file.endswith(".md"):
-            continue
+    new_state = {}
 
-        full = os.path.join(articles_dir, file)
-        h = file_hash(full)
+    for art in articles:
+        article_id = str(art["id"])
+        content = art["markdown"]
+        slug = art["slug"]
+        last_modified = art.get("updated_at") or art.get("modified") or None
 
-        new[file] = h
+        h = compute_hash(content)
 
-        if file not in old:
-            added.append(file)
-        elif old[file] != h:
-            updated.append(file)
+        new_state[article_id] = {
+            "hash": h,
+            "last_modified": last_modified,
+            "slug": slug,
+            "url": art["url"]
+        }
+
+        if article_id not in prev_state:
+            added.append(art)
+
         else:
-            skipped.append(file)
+            if h != prev_state[article_id]["hash"]:
+                updated.append(art)
+            else:
+                skipped.append(art)
 
-    save_hashes(new)
+    return added, updated, skipped, new_state
 
-    return added, updated, skipped
+
+def write_run_log(added, updated, skipped):
+    log = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "added": len(added),
+        "updated": len(updated),
+        "skipped": len(skipped),
+        "details": {
+            "added_ids": [a["id"] for a in added],
+            "updated_ids": [u["id"] for u in updated],
+            "skipped_ids": [s["id"] for s in skipped]
+        }
+    }
+
+    with open(RUN_LOG, "w") as f:
+        json.dump(log, f, indent=2)
+
+    print("\n=== Run Summary ===")
+    print(json.dumps(log, indent=2))
+    print("===================")
+
+    return log
 
 
 def main():
-    print("\n================ DAILY JOB START ======================")
+    print("Starting daily scraper job...")
 
-    print("STEP 1 — Scraping fresh articles...")
-    run_scraper()
+    graph = build_scraper_graph()
+    result = graph.invoke({
+        "page_url": "https://support.optisigns.com/api/v2/help_center/en-us/articles.json",
+        "results": [],
+        "next_page": None
+    })
 
-    print("\nSTEP 2 — Detecting new & updated files...")
-    added, updated, skipped = detect_delta()
+    articles = result["results"]
 
-    print(f"  Added:   {added}")
-    print(f"  Updated: {updated}")
-    print(f"  Skipped: {skipped}")
+    # Save scrape output
+    with open(SCRAPE_OUTPUT_FILE, "w") as f:
+        json.dump(articles, f, indent=2)
 
-    print("\nSTEP 3 — Processing into vectorstore...")
-    load_all()
+    prev_state = load_state()
 
-    print("\n================ DAILY JOB DONE ======================\n")
+    added, updated, skipped, new_state = detect_changes(articles, prev_state)
+
+    print(f"Added: {len(added)}")
+    print(f"Updated: {len(updated)}")
+    print(f"Skipped: {len(skipped)}")
+
+    # Upload only the delta
+    delta = added + updated
+    if delta:
+        upload_delta(delta)
+    else:
+        print("No changes detected → Nothing to upload.")
+
+    # Save new state
+    save_state(new_state)
+
+    # Save run log for DigitalOcean to display
+    write_run_log(added, updated, skipped)
+
+    print("Job completed.")
 
 
 if __name__ == "__main__":

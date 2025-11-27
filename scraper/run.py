@@ -46,8 +46,8 @@ def run_scraper():
             "timeout": None                  
         }
     )
-    with open("output.json", "w", encoding="utf-8") as f:
-        json.dump(final_state, f, ensure_ascii=False, indent=2)
+    with open("scraper/output.json", "w", encoding="utf-8") as f:
+        json.dump(final_state["results"], f, ensure_ascii=False, indent=2)
 
     save_markdown_files(final_state["results"])
     print("\n[scraper] DONE.")

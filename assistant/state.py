@@ -7,3 +7,4 @@ class RAGState(TypedDict):
     retrieved_chunks: Optional[List[str]]
     prompt: Optional[str]
     answer: Optional[str]
+    retrieved_metadata: Optional[List[dict]]
