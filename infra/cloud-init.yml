@@ -27,6 +27,9 @@ write_files:
       apt-get update
       apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
+      echo "=== Adding azureuser to docker group ==="
+      usermod -aG docker azureuser
+
       echo "=== Creating directories ==="
       mkdir -p /opt/optibot/chroma_storage
       mkdir -p /var/log/optibot
@@ -52,8 +55,9 @@ write_files:
       docker run --rm \
         -e GEMINI_API_KEY="${gemini_api_key}" \
         -v /opt/optibot/chroma_storage:/app/chroma_storage \
+        -v /var/log/optibot:/app/logs \
         ${docker_image} \
-        python -m scraper.daily_job >> /var/log/optibot/scraper.log 2>&1
+        bash -c "python -m scraper.daily_job && cp last_run_log.json /app/logs/" >> /var/log/optibot/scraper.log 2>&1
       echo "=== Completed daily scraper job at $(date) ===" >> /var/log/optibot/scraper.log
       CRONSCRIPT
 

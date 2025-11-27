@@ -1,9 +1,12 @@
 import hashlib
+import json
+from datetime import datetime
 from loader.vector_store import add_to_vectorstore, embed
 from scraper.run import run_scraper
 from scraper.utils import load_hash_db, save_hash_db
 
 HASH_FILE = "scraper_hash.json"
+LOG_FILE = "last_run_log.json"
 
 
 def calc_hash(text: str) -> str:
@@ -60,6 +63,22 @@ def run_daily_job() -> None:
     print("Added:   ", added)
     print("Updated: ", updated)
     print("Skipped: ", skipped)
+    
+    # Save run log as artifact
+    log_data = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "added": added,
+        "updated": updated,
+        "skipped": skipped,
+        "total_articles": len(scraped),
+        "added_ids": [art["id"] for art in scraped if str(art["id"]) not in old_hash][:10],  # first 10
+        "updated_ids": [art["id"] for art in scraped if str(art["id"]) in old_hash and old_hash[str(art["id"])] != new_hash[str(art["id"])]][:10]
+    }
+    
+    with open(LOG_FILE, "w") as f:
+        json.dump(log_data, f, indent=2)
+    
+    print(f"Log saved to {LOG_FILE}")
 
 
 if __name__ == "__main__":

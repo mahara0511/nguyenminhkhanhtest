@@ -57,20 +57,37 @@ jobs:
           username: ${{ secrets.AZURE_VM_USER }}
           key: ${{ secrets.AZURE_VM_SSH_KEY }}
           script: |
+            # Ensure user has docker permissions
+            sudo usermod -aG docker $USER || true
+
             # Pull latest image (GHCR already logged in via cloud-init)
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
             # Stop and remove old container
-            docker stop optibot-api || true
-            docker rm optibot-api || true
+            sudo docker stop optibot-api || true
+            sudo docker rm optibot-api || true
 
             # Run new container
-            docker run -d --name optibot-api \
+            sudo docker run -d --name optibot-api \
               -p 80:8000 \
               -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
               -v /opt/optibot/chroma_storage:/app/chroma_storage \
               --restart unless-stopped \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
+            # Update cron scraper script to use latest image
+            sudo bash -c 'cat > /opt/optibot/run_scraper.sh' << 'CRONEOF'
+            #!/bin/bash
+            echo "=== Starting daily scraper job at $(date) ===" >> /var/log/optibot/scraper.log
+            sudo docker run --rm \
+              -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+              -v /opt/optibot/chroma_storage:/app/chroma_storage \
+              -v /var/log/optibot:/app/logs \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+              bash -c "python -m scraper.daily_job && cp last_run_log.json /app/logs/" >> /var/log/optibot/scraper.log 2>&1
+            echo "=== Completed daily scraper job at $(date) ===" >> /var/log/optibot/scraper.log
+            CRONEOF
+            sudo chmod +x /opt/optibot/run_scraper.sh
+
             # Show container status
-            docker ps | grep optibot-api
+            sudo docker ps | grep optibot-api
