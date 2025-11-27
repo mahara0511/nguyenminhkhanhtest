@@ -60,7 +60,10 @@ jobs:
             # Ensure user has docker permissions
             sudo usermod -aG docker $USER || true
 
-            # Pull latest image (GHCR already logged in via cloud-init)
+            # Login to GHCR (image is public but login ensures pull works)
+            echo "${{ secrets.GHCR_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest image
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
             # Stop and remove old container
