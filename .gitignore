@@ -205,3 +205,21 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project specific
+chroma_storage/
+*.json
+!package.json
+articles/
+output.json
+state.json
+scraper_hash.json
+last_run_log.json
+
+# Terraform
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/*.tfvars
+!infra/terraform.tfvars.example
